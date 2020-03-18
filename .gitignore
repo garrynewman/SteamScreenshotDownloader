@@ -1,4 +1,5 @@
-config/site.php
-files/cache/*
-files/tmp/*
-.htaccess
+.vs
+bin
+obj
+*.user
+publish
