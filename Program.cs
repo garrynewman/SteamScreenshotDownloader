@@ -13,6 +13,14 @@ namespace SteamDownloader
         static string SteamId;
         static string DownloadFolder => $"Screenshots{SteamId}";
 
+        static Dictionary<string, string> MimeToExtension = new Dictionary<string, string>()
+        {
+            { "image/jpeg", ".jpg" },
+            { "image/png", ".png" },
+            { "image/gif", ".gif" },
+            { "image/webp", ".webp" },
+        };
+
         static async Task Main( string[] args )
         {
             Console.WriteLine( "Hello, want to download some screenshots yeah?" );
@@ -81,7 +89,7 @@ namespace SteamDownloader
                     Console.WriteLine( $"Retrying incase it was a server error.." );
 
                     await Task.Delay( fails * 1000 );
-                }
+                } 
 
                 await Task.Delay( 100 );
                 page++;
@@ -166,13 +174,11 @@ namespace SteamDownloader
 
                     var download = await client.GetAsync( imageUrl );
 
-                    var cd = download.Content.Headers.GetValues( "Content-Disposition" ).First();
-
-                    var filename = Regex.Match( cd, "filename\\*?=(?:UTF-8'')?\"?(.+)" ).Groups[1].Value.Trim( ';', ' ', '"' );
-
+                    var fileId = GetStringBetween(imageUrl, "ugc/", "/");
+                    var extension = GetFileExtension(download.Content.Headers.GetValues("Content-Type").First());
                     var data = await download.Content.ReadAsByteArrayAsync();
 
-                    System.IO.File.WriteAllBytes( $"{DownloadFolder}/{filename}", data );
+                    System.IO.File.WriteAllBytes( $"{DownloadFolder}/{fileId}{extension}", data );
 
                     return true;
                 }
@@ -189,6 +195,23 @@ namespace SteamDownloader
 
                 return false;
             }
+        }
+
+        private static string GetStringBetween(string s, string startWord, string endWord)
+        { 
+            int Pos1 = s.IndexOf(startWord) + startWord.Length;
+            int Pos2 = s.IndexOf(endWord, Pos1);
+            return s.Substring(Pos1, Pos2 - Pos1);
+        }
+
+        private static string GetFileExtension(string mimeType)
+        {
+            MimeToExtension.TryGetValue(mimeType, out string extension);
+            if (extension == null)
+            {
+                throw new ArgumentException($"Mimetype: {mimeType} not found in the dictionary!");
+            }
+            return extension;
         }
     }
 }
